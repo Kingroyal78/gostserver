@@ -20,13 +20,23 @@
 
 ## 快速开始
 
-1. 直接运行脚本：
+### 方式一：无需 git clone，直接一键运行
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Kingroyal78/gostserver/master/install.sh)
+```
+
+### 方式二：已下载到本地后运行
 
 ```bash
 sudo bash deploy-gost-server.sh
 ```
 
-2. 按提示输入：
+脚本会交互式询问参数并自动部署。
+
+## 交互输入
+
+按提示输入：
 
 - 实例名
 - 传输类型
@@ -35,7 +45,7 @@ sudo bash deploy-gost-server.sh
 - `ws/mws/wss/mwss` 时输入 `WS path`
 - TLS 类时输入证书路径
 
-3. 查看状态：
+## 查看状态
 
 ```bash
 systemctl status gost-server-<INSTANCE>.service

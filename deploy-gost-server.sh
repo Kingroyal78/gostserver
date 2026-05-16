@@ -75,7 +75,7 @@ install_gost() {
   if command -v gost >/dev/null 2>&1; then
     return
   fi
-  bash /root/cate/gost/install.sh --install
+  bash <(curl -fsSL https://github.com/go-gost/gost/raw/master/install.sh) --install
 }
 
 yaml_escape() {
