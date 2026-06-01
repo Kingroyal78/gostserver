@@ -59,16 +59,6 @@ if [[ "${TRANSPORT}" == "wss" || "${TRANSPORT}" == "mwss" || "${TRANSPORT}" == "
   prompt_default CA_FILE "TLS CA file (optional)" ""
 fi
 
-if [[ "${TRANSPORT}" == "mws" || "${TRANSPORT}" == "mwss" || "${TRANSPORT}" == "mtls" ]]; then
-  prompt_default MUX_VERSION "MUX version" "2"
-  prompt_default MUX_KEEPALIVE_INTERVAL "MUX keepalive interval" "10s"
-  prompt_default MUX_KEEPALIVE_DISABLED "MUX keepalive disabled" "false"
-  prompt_default MUX_KEEPALIVE_TIMEOUT "MUX keepalive timeout" "30s"
-  prompt_default MUX_MAX_FRAME_SIZE "MUX max frame size" "32768"
-  prompt_default MUX_MAX_RECEIVE_BUFFER "MUX max receive buffer" "4194304"
-  prompt_default MUX_MAX_STREAM_BUFFER "MUX max stream buffer" "65536"
-fi
-
 prompt_default LOG_LEVEL "Log level" "info"
 
 install_gost() {
@@ -82,32 +72,20 @@ yaml_escape() {
   printf '%s' "$1" | sed "s/'/''/g"
 }
 
-render_ws_headers() {
+render_listener_headers() {
   local headers="${WS_HEADERS:-}"
   if [[ -z "${headers}" ]]; then
     return
   fi
 
-  echo "      header:"
+  echo "        header:"
   IFS=',' read -ra PAIRS <<< "${headers}"
   for pair in "${PAIRS[@]}"; do
     [[ -z "${pair}" ]] && continue
     local key="${pair%%=*}"
     local value="${pair#*=}"
-    echo "        $(yaml_escape "${key}"): '$(yaml_escape "${value}")'"
+    echo "          $(yaml_escape "${key}"): '$(yaml_escape "${value}")'"
   done
-}
-
-render_mux_metadata() {
-  cat <<EOF
-      mux.version: ${MUX_VERSION:-2}
-      mux.keepaliveInterval: ${MUX_KEEPALIVE_INTERVAL:-10s}
-      mux.keepaliveDisabled: ${MUX_KEEPALIVE_DISABLED:-false}
-      mux.keepaliveTimeout: ${MUX_KEEPALIVE_TIMEOUT:-30s}
-      mux.maxFrameSize: ${MUX_MAX_FRAME_SIZE:-32768}
-      mux.maxReceiveBuffer: ${MUX_MAX_RECEIVE_BUFFER:-4194304}
-      mux.maxStreamBuffer: ${MUX_MAX_STREAM_BUFFER:-65536}
-EOF
 }
 
 write_yaml() {
@@ -123,6 +101,16 @@ services:
     listener:
       type: ${TRANSPORT}
 EOF
+
+  case "${TRANSPORT}" in
+    ws|wss|mws|mwss)
+      cat >> "${out}" <<EOF
+      metadata:
+        path: ${WS_PATH}
+EOF
+      render_listener_headers >> "${out}"
+      ;;
+  esac
 
   if [[ "${TRANSPORT}" == "wss" || "${TRANSPORT}" == "mwss" || "${TRANSPORT}" == "tls" || "${TRANSPORT}" == "mtls" ]]; then
     cat >> "${out}" <<EOF
@@ -142,25 +130,6 @@ EOF
       nodes:
         - name: target
           addr: "${TARGET_HOST}:${TARGET_PORT}"
-    metadata:
-EOF
-
-  case "${TRANSPORT}" in
-    ws|wss|mws|mwss)
-      cat >> "${out}" <<EOF
-      ws.path: "${WS_PATH}"
-EOF
-      render_ws_headers >> "${out}"
-      ;;
-  esac
-
-  case "${TRANSPORT}" in
-    mws|mwss|mtls)
-      render_mux_metadata >> "${out}"
-      ;;
-  esac
-
-  cat >> "${out}" <<EOF
 
 log:
   level: ${LOG_LEVEL:-info}

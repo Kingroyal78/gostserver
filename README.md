@@ -75,11 +75,33 @@ journalctl -u gost-server-<INSTANCE>.service -f
 - `/etc/gost-server/<INSTANCE>.yaml`
 - `/etc/systemd/system/gost-server-<INSTANCE>.service`
 
+YAML 会按 GOST listener metadata 格式生成，例如：
+
+```yaml
+services:
+  - name: us1
+    addr: "127.0.0.1:18009"
+    handler:
+      type: forward
+    listener:
+      type: mws
+      metadata:
+        path: /api/v1/stream/us1
+    forwarder:
+      nodes:
+        - name: target
+          addr: "127.0.0.1:18888"
+
+log:
+  level: info
+  output: stderr
+```
+
 ## 设计约定
 
 - 服务端固定做“入口监听 -> 转发到本机目标端口”
 - 默认目标地址：`127.0.0.1`
-- `ws/mws/wss/mwss` 默认路径：`/ws`
+- `ws/mws/wss/mwss` 默认路径：`/ws`，写入 `listener.metadata.path`
 - `wss/mwss/tls/mtls` 需要证书文件
 
 ## 常用操作
